@@ -10,6 +10,7 @@ import java.util.Random;
 import utilities.BestScores;
 import graphics.IDrawable;
 import graphics.Printer;
+import ai.AIManager;
 import ai.Conf;
 
 public class MainGrid implements IDrawable, KeyListener {
@@ -17,6 +18,7 @@ public class MainGrid implements IDrawable, KeyListener {
 	private Random r = new Random(System.currentTimeMillis());
 	Printer p = new Printer(this, true);
 	int best = BestScores.getBestScore("best_score.txt");
+	AIManager manager;
 
 	private static class MainGridHolder {
 		private final static MainGrid grid = new MainGrid();
@@ -46,6 +48,7 @@ public class MainGrid implements IDrawable, KeyListener {
 //				grid.cells[3][1]= 15;
 //				grid.cells[3][2]= 14;
 //				grid.cells[3][3]= 13;
+		manager = new AIManager(grid);
 	}
 	
 	void newCell() {
@@ -293,6 +296,12 @@ public class MainGrid implements IDrawable, KeyListener {
 		case KeyEvent.VK_DOWN :
 		case KeyEvent.VK_S :
 			grid.moveDown();
+			if (grid.moved) System.out.println("Moved down.");
+			else System.out.println("Impossible move.");
+			nextRound();
+			break;
+		case KeyEvent.VK_SPACE :
+			grid.move(manager.askNextMove());
 			if (grid.moved) System.out.println("Moved down.");
 			else System.out.println("Impossible move.");
 			nextRound();

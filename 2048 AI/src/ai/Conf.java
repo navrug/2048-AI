@@ -1,5 +1,6 @@
 package ai;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -14,16 +15,22 @@ public class Conf
 	double fitness;
 	double expectedFitness;
 	boolean isFour;
-	ArrayList<Conf> sons = new ArrayList<Conf>();
-	
+	Dir lastMove;
+	ArrayList<Conf> upSons = new ArrayList<Conf>();
+	ArrayList<Conf> downSons = new ArrayList<Conf>();
+	ArrayList<Conf> leftSons = new ArrayList<Conf>();
+	ArrayList<Conf> rightSons = new ArrayList<Conf>();
+	Hashtable<Dir,Double> expFitness;
+
 	public Conf(Grid grid)
 	{
 		this.grid = grid;
 		computeFitness();
 	}
 
-	Conf(Conf parent, boolean isFour, int k, int l, Dir dir, int depthLeft)
-	{
+	Conf(Conf parent, boolean isFour, int k, int l, Dir dir,
+			int depthLeft)
+			{
 		grid = parent.grid.clone();
 		this.isFour = isFour;
 		if (isFour)
@@ -32,25 +39,71 @@ public class Conf
 			grid.cells[k][l] = 1;
 		grid.lessEmpty();
 		grid.move(dir);
+		lastMove = dir;
 		computeFitness();
 		computeSons(depthLeft);
-		for (Conf son : sons)
-			expectedFitness += son.getProbability()*son.expectedFitness;
-		expectedFitness = expectedFitness*2/sons.size();
-	}
+			}
 
-	private void computeSons(int depthLeft) {
+	/*private*/ public void computeSons(int depthLeft)
+	{
+		if (depthLeft==0) {
+			System.out.println("ExpFitness : "+computeExpFitness());
+			return;
+		}
 		for (int i = 0; i<Grid.size; i++)
 			for (int j = 0; j<Grid.size; j++)
 				if (grid.cells[i][j]==0) {
-					for (Dir d : Dir.values()) {
-						sons.add(new Conf(this, false, i, j, d, depthLeft-1));
-						sons.add(new Conf(this, true, i, j, d, depthLeft-1));
-					}
+					upSons.add(new Conf(this, false, i, j, Dir.UP, depthLeft-1));
+					upSons.add(new Conf(this, true, i, j, Dir.UP, depthLeft-1));
+					downSons.add(new Conf(this, false, i, j, Dir.DOWN, depthLeft-1));
+					downSons.add(new Conf(this, true, i, j, Dir.DOWN, depthLeft-1));
+					leftSons.add(new Conf(this, false, i, j, Dir.LEFT, depthLeft-1));
+					leftSons.add(new Conf(this, true, i, j, Dir.LEFT, depthLeft-1));
+					rightSons.add(new Conf(this, false, i, j, Dir.RIGHT, depthLeft-1));
+					rightSons.add(new Conf(this, true, i, j, Dir.RIGHT, depthLeft-1));
 				}
+		System.out.println("ExpFitness : "+computeExpFitness());
 	}
 
 
+	public Dir bestMove()
+	{
+		double max = 0;
+		double current=0;
+		Dir result = null;
+		for (Dir dir : expFitness.keySet()) {
+			current = expFitness.get(dir);
+			if (current>max) {
+				max = current;
+				result = dir;
+			}
+		}
+		return result;
+	}
+
+	public Conf nextConf(Dir dir, int i, int j, boolean isFour)
+	{
+		byte value;
+		if (isFour)
+			value = (byte) 2;
+		else
+			value = (byte) 1;
+		for (Conf son : sons(dir))
+			if (grid.cells[i][j] == value)
+				return son;
+		throw new RuntimeException();
+	}
+
+	private ArrayList<Conf> sons(Dir dir)
+	{
+		switch (dir) {
+		case UP : return upSons;
+		case DOWN : return downSons;
+		case LEFT : return leftSons;
+		case RIGHT : return rightSons;
+		default : return null;
+		}
+	}
 
 	public double getFitness()
 	{
@@ -64,8 +117,27 @@ public class Conf
 			return 0.75;
 	}
 
-	private double getExpFitness()
+	private double computeExpFitness()
 	{
+		expectedFitness = 0;
+//		double temp;
+//		if (upSons.size() == 0) {
+//			expectedFitness = computeFitness();
+//			return expectedFitness;
+//		}
+//		expFitness = new Hashtable<Dir,Double>();
+//		for (Dir dir : Dir.values()) {
+//			expFitness.put(dir, (double) 0);
+//			for (Conf son : sons(dir))
+//				expFitness.put(dir,
+//						expFitness.get(dir)+son.expectedFitness);
+//			expFitness.put(dir,
+//					expFitness.get(dir)*2/sons(dir).size());
+//			temp = expFitness.get(dir);
+//			if (temp>)
+//			expectedFitness += expFitness.get(dir)/4;
+//		}
+//		System.out.println("computeExpFitness() : "+expectedFitness);
 		return expectedFitness;
 	}
 
