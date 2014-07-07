@@ -18,9 +18,22 @@ public class Grid
 	public final static int size = 4;
 
 	/*private*/ public final byte[][] cells = new byte[size][size];
-	boolean moved = true;
+	public boolean moved = false;
 	int empty = size*size;
 	int score = 0;
+
+	public void display()
+	{
+		System.out.println("------");
+
+		for (int i = 0; i<Grid.size; i++) {
+			for (int j = 0; j<Grid.size; j++)
+				System.out.print(cells[i][j]+" ");
+			System.out.println();
+		}
+		System.out.println("------");
+
+	}
 
 	@Override
 	public Grid clone()
@@ -34,12 +47,20 @@ public class Grid
 		result.score = score;
 		return result;
 	}
-	
-	public void lessEmpty()
+
+
+	public void setCell(boolean isFour, int i, int j) 
 	{
+		if (cells[i][j] != 0) 
+			throw new RuntimeException();
+		if (isFour)
+			cells[i][j] = 2;
+		else
+			cells[i][j] = 1;
+		moved = false;
 		empty--;
 	}
-	
+
 	public int getEmpty()
 	{
 		return empty;
@@ -146,7 +167,7 @@ public class Grid
 		}
 	}
 
-	public void moveCellsUp(int j)
+	public boolean moveCellsUp(int j)
 	{
 		short[] toShift = new short[size];
 		short shift = 0;
@@ -165,9 +186,10 @@ public class Grid
 				moved = true;
 			}
 		}
+		return moved;
 	}
 
-	public void moveCellsLeft(int i)
+	public boolean moveCellsLeft(int i)
 	{
 		short[] toShift = new short[size];
 		short shift = 0;
@@ -187,9 +209,10 @@ public class Grid
 				moved = true;
 			}
 		}
+		return moved;
 	}
 
-	public void moveCellsDown(int j)
+	public boolean moveCellsDown(int j)
 	{
 		short[] toShift = new short[size];
 		short shift = 0;
@@ -208,9 +231,10 @@ public class Grid
 				moved = true;
 			}
 		}
+		return moved;
 	}
 
-	public void moveCellsRight(int i)
+	public boolean moveCellsRight(int i)
 	{
 		short[] toShift = new short[size];
 		short shift = 0;
@@ -230,6 +254,7 @@ public class Grid
 				moved = true;
 			}
 		}
+		return moved;
 	}
 
 
@@ -264,22 +289,23 @@ public class Grid
 			moveCellsRight(i);
 		}
 	}
-	
-	public void move(Dir dir) {
+
+	public boolean move(Dir dir) {
 		switch (dir) {
 		case UP :
 			moveUp();
-			return;
+			return moved;
 		case DOWN :
 			moveDown();
-			return;
+			return moved;
 		case LEFT :
 			moveLeft();
-			return;
+			return moved;
 		case RIGHT :
 			moveRight();
-			return;
+			return moved;
 		}
+		throw new RuntimeException();
 	}
 
 

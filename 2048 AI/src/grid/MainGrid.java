@@ -8,6 +8,7 @@ import java.awt.event.KeyListener;
 import java.util.Random;
 
 import utilities.BestScores;
+import utilities.Dir;
 import graphics.IDrawable;
 import graphics.Printer;
 import ai.AIManager;
@@ -23,62 +24,86 @@ public class MainGrid implements IDrawable, KeyListener {
 	private static class MainGridHolder {
 		private final static MainGrid grid = new MainGrid();
 	}
-	
+
 	public static MainGrid getInstance() {
 		return MainGridHolder.grid;
 	}
-	
+
 	private MainGrid()
 	{
-		newCell();
-		newCell();
-//				grid.cells[0][0]= 2;
-//				grid.cells[0][1]= 2;
-//				grid.cells[0][2]= 3;
-//				grid.cells[0][3]= 4;
-//				grid.cells[1][0]= 8;
-//				grid.cells[1][1]= 7;
-//				grid.cells[1][2]= 6;
-//				grid.cells[1][3]= 5;
-//				grid.cells[2][0]= 9;
-//				grid.cells[2][1]= 10;
-//				grid.cells[2][2]= 11;
-//				grid.cells[2][3]= 12;
-//				grid.cells[3][0]= 16;
-//				grid.cells[3][1]= 15;
-//				grid.cells[3][2]= 14;
-//				grid.cells[3][3]= 13;
+		init();
+		//				grid.cells[0][0]= 2;
+		//				grid.cells[0][1]= 2;
+		//				grid.cells[0][2]= 3;
+		//				grid.cells[0][3]= 4;
+		//				grid.cells[1][0]= 8;
+		//				grid.cells[1][1]= 7;
+		//				grid.cells[1][2]= 6;
+		//				grid.cells[1][3]= 5;
+		//				grid.cells[2][0]= 9;
+		//				grid.cells[2][1]= 10;
+		//				grid.cells[2][2]= 11;
+		//				grid.cells[2][3]= 12;
+		//				grid.cells[3][0]= 16;
+		//				grid.cells[3][1]= 15;
+		//				grid.cells[3][2]= 14;
+		//				grid.cells[3][3]= 13;
 		manager = new AIManager(grid);
 	}
-	
-	void newCell() {
+	void init() {
+		int first = r.nextInt(Grid.size*Grid.size);
+		int second = r.nextInt(Grid.size*Grid.size-1);
+		if (second >= first) second++;
+		int counter = 0;
+		for (int i = 0; i<Grid.size; i++)
+			for (int j = 0; j<Grid.size; j++) {
+				if (counter == first || counter == second)
+					if (r.nextInt(4)==0)
+						grid.cells[i][j]=2;
+					else
+						grid.cells[i][j]=1;
+				counter++;
+			}
+		grid.empty = grid.empty-2;
+	}
+
+	void newCell(Dir lastMove) {
 		int counter = r.nextInt(grid.empty);
 		for (int i = 0; i<Grid.size; i++)
 			for (int j = 0; j<Grid.size; j++)
 				if (grid.cells[i][j] == 0) {
 					if (counter==0)
-						if (r.nextInt(4)==0)
+						if (r.nextInt(4)==0) {
 							grid.cells[i][j]=2;
-						else
+							manager.tellRound(lastMove, i, j, true);
+						}
+						else {
 							grid.cells[i][j]=1;
+							manager.tellRound(lastMove, i, j, false);
+						}
 					counter--;
 				}
 		grid.empty--;
 	}
 
-	void nextRound() {
-		if (!grid.moved) return;
-		newCell();
+	void nextRound(Dir lastMove) {
+		if (grid.moved)
+			System.out.println("Moved "+lastMove);
+		else {
+			System.out.println("Impossible move.");
+			return;
+		}
 		grid.moved = false;
+		newCell(lastMove);
 		if (grid.score > best) {
 			BestScores.putBest("best_score.txt", grid.score);
 			best = grid.score;
 		}
 		p.refresh();
-		Conf conf = new Conf(grid);
-		System.out.println("Fitness : "+conf.getFitness());
+		//Conf conf = new Conf(grid);
+		//System.out.println("Fitness : "+conf.getFitness());
 	}
-	
+
 	private void setFont(Graphics g, int i , int j)
 	{
 		switch (grid.cells[i][j]) {
@@ -272,39 +297,39 @@ public class MainGrid implements IDrawable, KeyListener {
 	@Override
 	public void keyReleased(KeyEvent arg0) {
 		switch (arg0.getKeyCode()) {
-		case KeyEvent.VK_LEFT :
-		case KeyEvent.VK_Q :
-			grid.moveLeft();
-			if (grid.moved) System.out.println("Moved left.");
-			else System.out.println("Impossible move.");
-			nextRound();
-			break;
-		case KeyEvent.VK_RIGHT :
-		case KeyEvent.VK_D :
-			grid.moveRight();
-			if (grid.moved) System.out.println("Moved right.");
-			else System.out.println("Impossible move.");
-			nextRound();
-			break;
 		case KeyEvent.VK_UP :
 		case KeyEvent.VK_Z:
 			grid.moveUp();
 			if (grid.moved) System.out.println("Moved up.");
 			else System.out.println("Impossible move.");
-			nextRound();
+			nextRound(Dir.UP);
 			break;
 		case KeyEvent.VK_DOWN :
 		case KeyEvent.VK_S :
 			grid.moveDown();
 			if (grid.moved) System.out.println("Moved down.");
 			else System.out.println("Impossible move.");
-			nextRound();
+			nextRound(Dir.DOWN);
+			break;
+		case KeyEvent.VK_LEFT :
+		case KeyEvent.VK_Q :
+			grid.moveLeft();
+			if (grid.moved) System.out.println("Moved left.");
+			else System.out.println("Impossible move.");
+			nextRound(Dir.LEFT);
+			break;
+		case KeyEvent.VK_RIGHT :
+		case KeyEvent.VK_D :
+			grid.moveRight();
+			if (grid.moved) System.out.println("Moved right.");
+			else System.out.println("Impossible move.");
+			nextRound(Dir.RIGHT);
 			break;
 		case KeyEvent.VK_SPACE :
-			grid.move(manager.askNextMove());
-			if (grid.moved) System.out.println("Moved down.");
-			else System.out.println("Impossible move.");
-			nextRound();
+			Dir nextMove = manager.askNextMove();
+			grid.move(nextMove);
+
+			nextRound(nextMove);
 			break;
 		default :
 			return;

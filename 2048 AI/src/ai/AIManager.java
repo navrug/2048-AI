@@ -15,11 +15,15 @@ public class AIManager
 	public void tellRound(Dir dir, int i, int j, boolean isFour)
 	{
 		current = current.nextConf(dir, i, j, isFour);
+		System.out.println("Told round");
+		current.grid.display();
+		System.out.println(current.grid.moved);
 	}
 	
 	public Dir askNextMove()
 	{
-		current.computeSons(1);
+		current.setDepthLeft(2);
+		current.computeSons();
 		return current.bestMove();
 	}
 }

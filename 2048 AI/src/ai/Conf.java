@@ -1,5 +1,6 @@
 package ai;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
@@ -11,57 +12,87 @@ import grid.Cell;
 
 public class Conf
 {
-	final private Grid grid;
+	final Grid grid;
 	double fitness;
 	double expectedFitness;
 	boolean isFour;
 	Dir lastMove;
-	ArrayList<Conf> upSons = new ArrayList<Conf>();
-	ArrayList<Conf> downSons = new ArrayList<Conf>();
-	ArrayList<Conf> leftSons = new ArrayList<Conf>();
-	ArrayList<Conf> rightSons = new ArrayList<Conf>();
-	Hashtable<Dir,Double> expFitness;
+	Dir bestNext;
+	int depthLeft;
+	boolean impossibleMove = false;
+	EnumMap<Dir,ArrayList<Conf>> sons = new EnumMap<Dir,ArrayList<Conf>>(Dir.class);
+	//	ArrayList<Conf> upSons = new ArrayList<Conf>();
+	//	ArrayList<Conf> downSons = new ArrayList<Conf>();
+	//	ArrayList<Conf> leftSons = new ArrayList<Conf>();
+	//	ArrayList<Conf> rightSons = new ArrayList<Conf>();
+	EnumMap<Dir,Double> expFitness;
 
 	public Conf(Grid grid)
 	{
 		this.grid = grid;
+		System.out.println("Constructor grid");
+		grid.display();
 		computeFitness();
 	}
 
-	Conf(Conf parent, boolean isFour, int k, int l, Dir dir,
-			int depthLeft)
-			{
+	Conf(Conf parent, boolean isFour, int k, int l,	int depthLeft)
+	{
 		grid = parent.grid.clone();
 		this.isFour = isFour;
 		if (isFour)
 			grid.cells[k][l] = 2;
 		else
 			grid.cells[k][l] = 1;
-		grid.lessEmpty();
-		grid.move(dir);
+		computeFitness();
+		this.depthLeft = depthLeft;
+	}
+
+	Conf(Conf parent, Dir dir)
+	{
+		System.out.println("Trying "+dir+".");
+		grid = parent.grid.clone();
+		grid.moved = false;
+		if (!grid.move(dir)) {
+			System.out.println("Imp move : "+dir);
+			impossibleMove = true;
+			return;
+		}
 		lastMove = dir;
 		computeFitness();
-		computeSons(depthLeft);
-			}
+	}
+	
 
-	/*private*/ public void computeSons(int depthLeft)
+
+	public void setDepthLeft(int depthLeft)
+	{
+		this.depthLeft= depthLeft; 
+	}
+
+	/*private*/ public void computeSons()
 	{
 		if (depthLeft==0) {
 			System.out.println("ExpFitness : "+computeExpFitness());
 			return;
 		}
-		for (int i = 0; i<Grid.size; i++)
-			for (int j = 0; j<Grid.size; j++)
-				if (grid.cells[i][j]==0) {
-					upSons.add(new Conf(this, false, i, j, Dir.UP, depthLeft-1));
-					upSons.add(new Conf(this, true, i, j, Dir.UP, depthLeft-1));
-					downSons.add(new Conf(this, false, i, j, Dir.DOWN, depthLeft-1));
-					downSons.add(new Conf(this, true, i, j, Dir.DOWN, depthLeft-1));
-					leftSons.add(new Conf(this, false, i, j, Dir.LEFT, depthLeft-1));
-					leftSons.add(new Conf(this, true, i, j, Dir.LEFT, depthLeft-1));
-					rightSons.add(new Conf(this, false, i, j, Dir.RIGHT, depthLeft-1));
-					rightSons.add(new Conf(this, true, i, j, Dir.RIGHT, depthLeft-1));
-				}
+		System.out.println("Trying possible moves...");
+		EnumMap<Dir, Conf> tempSons = new EnumMap<Dir, Conf>(Dir.class);
+		for (Dir dir : Dir.values()) {
+			tempSons.put(dir,new Conf(this, dir));
+			if (tempSons.get(dir).impossibleMove)
+				System.out.println(dir+" impossible");
+			else {
+				sons.put(dir, new ArrayList<Conf>());
+				for (int i = 0; i<Grid.size; i++)
+					for (int j = 0; j<Grid.size; j++)
+						if (tempSons.get(dir).grid.cells[i][j]==0) {
+							sons.get(dir).add(
+									new Conf(tempSons.get(dir),false,i,j,depthLeft-1));
+							sons.get(dir).add(
+									new Conf(tempSons.get(dir),true,i,j,depthLeft-1));
+						}
+				System.out.println("Number of sons in "+dir+" : "+sons.get(dir).size());
+			}
+		}
 		System.out.println("ExpFitness : "+computeExpFitness());
 	}
 
@@ -71,7 +102,7 @@ public class Conf
 		double max = 0;
 		double current=0;
 		Dir result = null;
-		for (Dir dir : expFitness.keySet()) {
+		for (Dir dir : Dir.values()) {
 			current = expFitness.get(dir);
 			if (current>max) {
 				max = current;
@@ -88,22 +119,12 @@ public class Conf
 			value = (byte) 2;
 		else
 			value = (byte) 1;
-		for (Conf son : sons(dir))
-			if (grid.cells[i][j] == value)
+		for (Conf son : sons.get(dir))
+			if (son.grid.cells[i][j] == value)
 				return son;
 		throw new RuntimeException();
 	}
 
-	private ArrayList<Conf> sons(Dir dir)
-	{
-		switch (dir) {
-		case UP : return upSons;
-		case DOWN : return downSons;
-		case LEFT : return leftSons;
-		case RIGHT : return rightSons;
-		default : return null;
-		}
-	}
 
 	public double getFitness()
 	{
@@ -120,24 +141,42 @@ public class Conf
 	private double computeExpFitness()
 	{
 		expectedFitness = 0;
-//		double temp;
-//		if (upSons.size() == 0) {
-//			expectedFitness = computeFitness();
-//			return expectedFitness;
-//		}
-//		expFitness = new Hashtable<Dir,Double>();
-//		for (Dir dir : Dir.values()) {
-//			expFitness.put(dir, (double) 0);
-//			for (Conf son : sons(dir))
-//				expFitness.put(dir,
-//						expFitness.get(dir)+son.expectedFitness);
-//			expFitness.put(dir,
-//					expFitness.get(dir)*2/sons(dir).size());
-//			temp = expFitness.get(dir);
-//			if (temp>)
-//			expectedFitness += expFitness.get(dir)/4;
-//		}
-//		System.out.println("computeExpFitness() : "+expectedFitness);
+		//Handling impossible moves
+		if (impossibleMove) {
+			System.out.println("Impossible move");
+			return 0;
+		}
+		//Base case of the recursion
+		if (depthLeft == 0) {
+			expectedFitness = computeFitness();
+			//System.out.println("computeExpFitness() : "+expectedFitness);
+			return expectedFitness;
+		}
+		//Compute expected fitness for each direction
+		expFitness = new EnumMap<Dir,Double>(Dir.class);
+		double temp;
+		for (Dir dir : Dir.values()) {
+			if (sons.get(dir)==null) {
+				expFitness.put(dir, (double) 0);
+				System.out.println("Impossible direction");
+			}
+			else {
+				temp = 0;
+				expFitness.put(dir, (double) 0);
+				for (Conf son : sons.get(dir))
+					expFitness.put(dir,
+							expFitness.get(dir)+son.computeExpFitness());
+				expFitness.put(dir,
+						expFitness.get(dir)*2/sons.get(dir).size());
+				temp = expFitness.get(dir);
+				System.out.println("temp"+temp);
+				if (temp>expectedFitness) {
+					expectedFitness = temp;
+					bestNext = dir;
+				}
+			}
+		}
+		System.out.println("computeExpFitness() : "+expectedFitness);
 		return expectedFitness;
 	}
 
