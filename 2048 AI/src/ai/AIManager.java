@@ -6,6 +6,7 @@ import grid.Grid;
 public class AIManager
 {
 	Conf current;
+	long ti;
 	
 	public AIManager(Grid g)
 	{
@@ -17,12 +18,18 @@ public class AIManager
 		current = current.nextConf(dir, i, j, isFour);
 		System.out.println("Told round");
 		current.grid.display();
-		System.out.println(current.grid.moved);
+	}
+	
+	public double speed()
+	{
+		return current.numberOfComputed()
+				/(System.currentTimeMillis()-ti);
 	}
 	
 	public Dir askNextMove()
 	{
-		current.setDepthLeft(2);
+		ti = System.currentTimeMillis();
+		current.setDepthLeft(3);
 		current.computeSons();
 		return current.bestMove();
 	}

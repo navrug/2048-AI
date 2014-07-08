@@ -1,17 +1,8 @@
 package grid;
 
-import graphics.IDrawable;
-import graphics.Printer;
-import utilities.BestScores;
+
 import utilities.Dir;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.util.ArrayList;
-import java.util.Random;
 
 public class Grid
 {
@@ -24,14 +15,14 @@ public class Grid
 
 	public void display()
 	{
-		System.out.println("------");
+		System.out.println("-------");
 
 		for (int i = 0; i<Grid.size; i++) {
 			for (int j = 0; j<Grid.size; j++)
 				System.out.print(cells[i][j]+" ");
 			System.out.println();
 		}
-		System.out.println("------");
+		System.out.println("-------");
 
 	}
 

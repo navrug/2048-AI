@@ -1,2 +1,2 @@
 #File meant to keep track of the best score.
-BestScore=4648
+BestScore=22356

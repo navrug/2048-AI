@@ -12,6 +12,16 @@ public class Cell implements Comparable {
 		this.b = b;
 	}
 	
+	public boolean upSnakeCompare(Cell c)
+	{
+		return i<c.i ||  (i % 2 == 0 && j<c.j) || (i % 2 == 1 && j>c.j);
+	}
+	
+	public boolean upIsNext(Cell c)
+	{
+		return i==c.i &&  (i % 2 == 0 && j+1 == c.j) || (i % 2 == 1 && j-1 == c.j);
+	}
+	
 	/*
 	 * Invert the natural ordering so that the head is the greatest
 	 * in a PriorityQueue.

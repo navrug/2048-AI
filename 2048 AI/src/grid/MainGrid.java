@@ -22,14 +22,14 @@ public class MainGrid implements IDrawable, KeyListener {
 	AIManager manager;
 
 	private static class MainGridHolder {
-		private final static MainGrid grid = new MainGrid();
+		private final static MainGrid grid = new MainGrid(true);
 	}
 
 	public static MainGrid getInstance() {
 		return MainGridHolder.grid;
 	}
 
-	private MainGrid()
+	private MainGrid(boolean auto)
 	{
 		init();
 		//				grid.cells[0][0]= 2;
@@ -49,6 +49,14 @@ public class MainGrid implements IDrawable, KeyListener {
 		//				grid.cells[3][2]= 14;
 		//				grid.cells[3][3]= 13;
 		manager = new AIManager(grid);
+		if (auto)
+			while (true) {
+				System.out.println("Asking AI for next move.");
+				Dir nextMove = manager.askNextMove();
+				System.out.println(manager.speed());
+				grid.move(nextMove);
+				nextRound(nextMove);
+			}
 	}
 	void init() {
 		int first = r.nextInt(Grid.size*Grid.size);
@@ -290,6 +298,16 @@ public class MainGrid implements IDrawable, KeyListener {
 
 	@Override
 	public void keyPressed(KeyEvent arg0) {
+		//		switch (arg0.getKeyCode()) {
+		//		case KeyEvent.VK_SPACE :
+		//			Dir nextMove = manager.askNextMove();
+		//			grid.move(nextMove);
+		//
+		//			nextRound(nextMove);
+		//			break;
+		//		default :
+		//			return;
+		//		}
 	}
 
 
@@ -326,7 +344,9 @@ public class MainGrid implements IDrawable, KeyListener {
 			nextRound(Dir.RIGHT);
 			break;
 		case KeyEvent.VK_SPACE :
+			System.out.println("Asking AI for next move.");
 			Dir nextMove = manager.askNextMove();
+			System.out.println(manager.speed());
 			grid.move(nextMove);
 
 			nextRound(nextMove);
