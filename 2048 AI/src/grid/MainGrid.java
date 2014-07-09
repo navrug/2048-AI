@@ -53,7 +53,7 @@ public class MainGrid implements IDrawable, KeyListener {
 			while (true) {
 				System.out.println("Asking AI for next move.");
 				Dir nextMove = manager.askNextMove();
-				System.out.println(manager.speed());
+				System.out.println(manager.speed()+" conf/ms.");
 				grid.move(nextMove);
 				nextRound(nextMove);
 			}
@@ -346,7 +346,7 @@ public class MainGrid implements IDrawable, KeyListener {
 		case KeyEvent.VK_SPACE :
 			System.out.println("Asking AI for next move.");
 			Dir nextMove = manager.askNextMove();
-			System.out.println(manager.speed());
+			System.out.println(manager.speed()+" conf/ms.");
 			grid.move(nextMove);
 
 			nextRound(nextMove);

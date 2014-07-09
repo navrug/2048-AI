@@ -12,28 +12,30 @@ import grid.Cell;
 
 public class Conf
 {
-	static int numberOfComputed = 0;
+	//static int numberOfComputed = 0;
 	final Grid grid;
 	double fitness;
 	double expectedFitness;
 	boolean isFour;
-	Dir lastMove;
 	Dir bestNext;
 	int depthLeft;
 	boolean impossibleMove = false;
-	EnumMap<Dir,ArrayList<Conf>> sons = new EnumMap<Dir,ArrayList<Conf>>(Dir.class);
-	//	ArrayList<Conf> upSons = new ArrayList<Conf>();
-	//	ArrayList<Conf> downSons = new ArrayList<Conf>();
-	//	ArrayList<Conf> leftSons = new ArrayList<Conf>();
-	//	ArrayList<Conf> rightSons = new ArrayList<Conf>();
+	EnumMap<Dir,ArrayList<Conf>> sons =
+			new EnumMap<Dir,ArrayList<Conf>>(Dir.class);
 	EnumMap<Dir,Double> expFitness;
+
+	//Super for HypConf constructor
+	Conf(Conf parent) {
+		grid = parent.grid;
+//		grid = parent.grid.clone();
+	}
 
 	public Conf(Grid grid)
 	{
 		this.grid = grid;
 		System.out.println("Constructor grid");
 		grid.display();
-		computeFitness();
+		//computeFitness();
 	}
 
 	Conf(Conf parent, boolean isFour, int k, int l,	int depthLeft)
@@ -44,7 +46,7 @@ public class Conf
 			grid.cells[k][l] = 2;
 		else
 			grid.cells[k][l] = 1;
-		computeFitness();
+		//fitness = Fitness.compute(this);
 		this.depthLeft = depthLeft;
 		computeSons();
 	}
@@ -52,25 +54,34 @@ public class Conf
 	Conf(Conf parent, Dir dir)
 	{
 		grid = parent.grid.clone();
+		if (parent instanceof HypConf)
+			((HypConf) parent).normalize(grid);
 		grid.moved = false;
 		if (!grid.move(dir)) {
 			impossibleMove = true;
 			return;
 		}
-		lastMove = dir;
-		computeFitness();
+//		lastMove = dir;
+		//computeFitness();
 	}
-	
 
+	public byte getByte(int i, int j)
+	{
+		return grid.cells[i][j];
+	}
 
 	public void setDepthLeft(int depthLeft)
 	{
 		this.depthLeft= depthLeft; 
 	}
 
+	public int numberOfEmpties()
+	{
+		return grid.getEmpty();
+	}
+
 	/*private*/ public void computeSons()
 	{
-		numberOfComputed = 0;
 		if (depthLeft==0) {
 			computeExpFitness();
 			return;
@@ -85,19 +96,17 @@ public class Conf
 					for (int j = 0; j<Grid.size; j++)
 						if (tempSons.get(dir).grid.cells[i][j]==0) {
 							sons.get(dir).add(
-									new Conf(tempSons.get(dir),false,i,j,depthLeft-1));
+									new HypConf(tempSons.get(dir),
+											false,i,j,depthLeft-1));
 							sons.get(dir).add(
-									new Conf(tempSons.get(dir),true,i,j,depthLeft-1));
+									new HypConf(tempSons.get(dir),
+											true,i,j,depthLeft-1));
 						}
-				}
+			}
 		}
 		computeExpFitness();
 	}
-	
-	public int numberOfComputed()
-	{
-		return numberOfComputed;
-	}
+
 
 
 	public Dir bestMove()
@@ -123,7 +132,7 @@ public class Conf
 		else
 			value = (byte) 1;
 		for (Conf son : sons.get(dir))
-			if (son.grid.cells[i][j] == value)
+			if (son.getByte(i,j) == value)
 				return son;
 		throw new RuntimeException();
 	}
@@ -144,13 +153,9 @@ public class Conf
 	private double computeExpFitness()
 	{
 		expectedFitness = 0;
-		//Handling impossible moves
-		if (impossibleMove) {
-			return 0;
-		}
 		//Base case of the recursion
 		if (depthLeft == 0) {
-			expectedFitness = computeFitness();
+			expectedFitness = Fitness.compute(this);
 			//System.out.println("computeExpFitness() : "+expectedFitness);
 			return expectedFitness;
 		}
@@ -166,7 +171,8 @@ public class Conf
 				expFitness.put(dir, (double) 0);
 				for (Conf son : sons.get(dir))
 					expFitness.put(dir,
-							expFitness.get(dir)+son.computeExpFitness());
+							expFitness.get(dir)+son.computeExpFitness()
+							*son.getProbability());
 				expFitness.put(dir,
 						expFitness.get(dir)*2/sons.get(dir).size());
 				temp = expFitness.get(dir);
@@ -178,59 +184,6 @@ public class Conf
 		}
 		return expectedFitness;
 	}
-	
-	public double computeFitness()
-	{
-		numberOfComputed++;
-		//return computeFitnessSnake();
-		return computeFitnessPlaced();
-	}
 
-	private double computeFitnessSnake()
-	{
-		PriorityQueue<Cell> queue = new PriorityQueue<Cell>();
-		for (int i = 0; i<Grid.size; i++)
-			for (int j = 0; j<Grid.size; j++)
-				queue.add(new Cell(i,j,grid.cells[i][j]));
-		Cell first = queue.remove();
-		Cell next;
-		while (!queue.isEmpty()) {
-			next = queue.remove();
-			if (first.i == next.i && (first.j==next.j+1 || first.j==next.j-1))
-					fitness += 2*first.b;
-			if (first.i == next.i-1 && first.j==next.j)
-				fitness += first.b;
-			first = next;
-		}
-		fitness += 2*grid.getEmpty() ;
-		return fitness;
-	}
-	
-
-	
-	private double computeFitnessPlaced()
-	{
-		PriorityQueue<Cell> queue = new PriorityQueue<Cell>();
-		for (int i = 0; i<Grid.size; i++)
-			if (i%2 == 0)
-			for (int j = 0; j<Grid.size; j++)
-				queue.add(new Cell(i,j,grid.cells[i][j]));
-			else
-				for (int j = Grid.size-1 ; j>=0; j--)
-					queue.add(new Cell(i,j,grid.cells[i][j]));
-		Cell current = queue.remove();
-		if (current.i == 0 && current.j == 0)
-			fitness += 10*current.b;
-		byte highest = current.b;
-		Cell next;
-		while (!queue.isEmpty()) {
-			next = queue.remove();
-			if (current.upIsNext(next))
-				fitness += current.b;
-			current = next;
-		}
-		fitness += highest*grid.getEmpty() ;
-		return fitness;
-	}
 
 }
